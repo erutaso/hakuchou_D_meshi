@@ -9,7 +9,7 @@
  
     $sudo apt-get install gem
     $sudo gem install twitter
-    $git clone https://github.com/murakamiginko/hakuchou_D_menu.git
+    $git clone https://github.com/murakamiginko/hakuchou_D_meshi.git
     $cd hakuchou_D_menu
     $ruby main.rb
  
