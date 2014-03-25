@@ -29,11 +29,11 @@ end
 def meshi(status)
 
   @dic.each{ |key, value|
-    if status.text.include?("@#{name} #{key}")
+    if status.text.include?("@#{@name} #{key}")
 
       menu = "./#{value}.txt"
 
-      text = status.text.sub("@#{name} #{key}","")
+      text = status.text.sub("@#{@name} #{key}","")
       text = text.gsub(/(\s|　)+/, "")
       text = text.gsub(/日/,"")
       text = NKF.nkf('-m0Z1 -w',text)
@@ -69,12 +69,12 @@ end
 def follow
   
   follower_ids = []
-  @rest_client.follower_ids("#{name}").each do |id|
+  @rest_client.follower_ids("#{@name}").each do |id|
     follower_ids.push(id)
   end
   
   friend_ids   = []
-  @rest_client.friend_ids("#{name}").each do |id|
+  @rest_client.friend_ids("#{@name}").each do |id|
     friend_ids.push(id)
   end
   
