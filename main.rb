@@ -63,14 +63,9 @@ end
 
 
 def tweet(body ,id)
-  
-  unless object
-    opt = nil
-    tweet = body
-  else
-    opt = {"in_reply_to_status_id" => id}
-    tweet = "@#{object.user.screen_name} #{body}"
-  end
+
+  opt = {"in_reply_to_status_id" => id}
+  tweet = "@#{object.user.screen_name} #{body}"
   
   @rest_client.update tweet,opt
   
