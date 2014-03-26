@@ -62,13 +62,13 @@ def meshi(status)
 end
 
 
-def tweet(body ,object = nil)
+def tweet(body ,id)
   
   unless object
     opt = nil
     tweet = body
   else
-    opt = {"in_reply_to_status_id" => object.id.to_s}
+    opt = {"in_reply_to_status_id" => id}
     tweet = "@#{object.user.screen_name} #{body}"
   end
   
@@ -141,7 +141,7 @@ Thread.new(){
       puts e
       tweet_body = e
     ensure
-      tweet(tweet_body, object)
+      tweet(tweet_body, object.id.to_s)
     end
   end
 end
