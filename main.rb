@@ -22,47 +22,58 @@ end
 
 
 @dic         = {'朝' => 'first', '昼' => 'second', '夜' => 'third'}
-@today       = Date.today
 @last_update = nil
 @name        = Const::SCREEN_NAME
 
+
 def meshi(status)
 
-  @dic.each{ |key, value|
-    if status.text.include?("@#{@name} #{key}")
+  status = NKF.nkf('-m0Z1 -w',status)
+  
+  matchd = status.match(/@#{@name} ([0-9]+|今|明|明々*後)日[ の]?(.)/)
+  return unless matchd
+  
+  specified_day  = matchd[1]
+  specified_time = matchd[2]
 
-      menu = "./#{value}.txt"
+  date    = Date.today
+  end_day = Date.new(date.year, date.month, -1).day
 
-      text = status.text.sub("@#{@name} #{key}","")
-      text = text.gsub(/(\s|　)+/, "")
-      text = text.gsub(/日/,"")
-      text = NKF.nkf('-m0Z1 -w',text)
+  if date.day == end_day
+    raise "今日は月末です。献立表の更新までお待ちください。"
+  end
 
-      case text
-      when /今/ 
-        open(menu){ |file|
-          body =  file.readlines[@today.day - 1]
-        }
-      when /明/
-        if @today.day == Date.new(@today.year, @today.month, -1).day
-          body = "今日は月末です。献立表の更新までお待ちください。"
-        else
-          open(menu){ |file|
-            body = file.readlines[@today.day]
-          }
-        end
-      else
-        open(menu){ |file|
-          body = file.readlines[text.to_i - 1]
-        }
-      end
-      
-      opt = {"in_reply_to_status_id"=>status.id.to_s}
-      tweet = "@#{status.user.screen_name} #{body}"
-      @rest_client.update tweet,opt
-
+  if specified_day =~ /[0-9]+/
+    if day > end_day
+      return
     end
-  }
+    day = specified_day.to_i
+  else
+    d   = date.day
+    day = d+0
+    day = d+1 if speciefid_day == "明"
+    day = d+2 + speciefid_day.count("々") if =~ /明々*後/
+  end
+  
+  menu = "./#{@dic[specified_time]}.txt"
+  
+  return File.readlines(menu)[day - 1].chomp
+
+end
+
+
+def tweet(body ,object = nil)
+  
+  unless object
+    opt = nil
+    tweet = body
+  else
+    opt = {"in_reply_to_status_id" => object.id.to_s}
+    tweet = "@#{object.user.screen_name} #{body}"
+  end
+  
+  @rest_client.update tweet,opt
+  
 end
 
 
@@ -88,40 +99,24 @@ def follow
 end
 
 
-def tweet
-
-  d = DateTime.now
+def auto
+  
+  d     = DateTime.now
+  today = Date.today
   
   return if @last_update and @last_update.hour == d.hour
   
-  if d.hour == 07
-    open("./first.txt"){ |file|
-      @fare = file.readlines[@today.day - 1]
-    }
-    time = "朝"
-  end
+  time = "朝" if d.hour == 07
+  time = "昼" if d.hour == 11
+  time = "夜" if d.hour == 17
+  follow      if d.hour == 00
   
-  if d.hour == 11
-    open("./second.txt"){ |file|
-      @fare = file.readlines[@today.day - 1]
-    }
-    time = "昼"
-  end
-  
-  if d.hour == 17
-    open("./third.txt"){ |file|
-      @fare = file.readlines[@today.day - 1]
-    }
-    time = "夜"
-  end
-  
-  if d.hour == 00
-    follow
-  end
+  menu = "./#{@dic[time]}.txt"
 
-  if time
-    @rest_client.update("#{d.month}月#{d.day}日の#{time}の献立は#{@fare}です。")
-  end
+  today_menu = File.readlines(menu)[today.day - 1].chomp
+  
+  body = "#{d.month}月#{d.day}日の#{time}の献立は#{today_menu}です。"
+  tweet(body) if time
   
   @last_update = d    
   
@@ -131,7 +126,7 @@ end
 Thread.new(){
   while true
     puts "ok #{DateTime.now}"
-    tweet
+    auto
     sleep(10)
   end
 }
@@ -140,6 +135,13 @@ Thread.new(){
 @stream_client.user do |object|
   next unless object.is_a? Twitter::Tweet
   unless object.text.start_with? "RT"
-    meshi(object)
+    begin
+      tweet_body = meshi(object)
+    rescue => e
+      puts e
+      tweet_body = e
+    ensure
+      tweet(tweet_body, object)
+    end
   end
 end
