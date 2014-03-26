@@ -26,49 +26,32 @@ end
 @name        = Const::SCREEN_NAME
 
 
-def meshi(status)
-
-
+def meshi(str)
   
-  matchd = status.match(/@#{@name} ([0-9]+|今|明|明々*後)日[ の]?(.)/)
-  return unless matchd
-  
-  specified_day  = matchd[1]
-  specified_time = matchd[2]
+  matchd = str.match(/@#{@name} ([0-9]+|今|明|明々*後)日[ の]?(.)/)
+
+  return "" unless matchd
+
+  specified_day, specified_time = matchd[1], matchd[2]
 
   date    = Date.today
   end_day = Date.new(date.year, date.month, -1).day
 
   if date.day == end_day
-    raise "今日は月末です。献立表の更新までお待ちください。"
+    return "今日は月末です。献立表の更新までお待ちください。"
   end
 
   if specified_day =~ /[0-9]+/
-    if day > end_day
-      return
-    end
     day = specified_day.to_i
   else
     d   = date.day
     day = d + 0
-    day = d + 1 if speciefid_day == "明"
-    day = d + 2 +  speciefid_day.count("々") if speciefid_day =~ /明々*後/
+    day = d + 1 if specified_day.to_s == "明"
+    day = d + 2 +  specified_day.count("々") if specified_day =~ /明々*後/
   end
-  
-  menu = "./#{@dic[specified_time]}.txt"
-  
-  return File.readlines(menu)[day - 1].chomp
 
-end
+  return File.readlines("./#{@dic[specified_time]}.txt")[day - 1].chomp
 
-
-def tweet(body ,id)
-
-  opt = {"in_reply_to_status_id" => id}
-  tweet = "@#{object.user.screen_name} #{body}"
-  
-  @rest_client.update tweet,opt
-  
 end
 
 
@@ -126,17 +109,10 @@ Thread.new(){
   end
 }
 
-
-@stream_client.user do |object|
-  next unless object.is_a? Twitter::Tweet
-  unless object.text.start_with? "RT"
-    begin
-      tweet_body = meshi(object)
-    rescue => e
-      puts e
-      tweet_body = e
-    ensure
-      tweet(tweet_body, object.id.to_s)
-    end
+@stream_client.user do |status|
+  next unless status.is_a? Twitter::Tweet
+  if !status.text.start_with? "RT" and status.text.include?("@#{@name}")
+    tweet = "@#{status.user.screen_name} #{meshi(status.text)}"
+    @rest_client.update(tweet, :in_reply_to_status_id => status.id.to_s)
   end
 end
