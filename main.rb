@@ -50,9 +50,9 @@ def meshi(status)
     day = specified_day.to_i
   else
     d   = date.day
-    day = d+0
-    day = d+1 if speciefid_day == "明"
-    day = d+2 + speciefid_day.count("々") if =~ /明々*後/
+    day = d + 0
+    day = d + 1 if speciefid_day == "明"
+    day = d + 2 +  speciefid_day.count("々") if speciefid_day =~ /明々*後/
   end
   
   menu = "./#{@dic[specified_time]}.txt"
