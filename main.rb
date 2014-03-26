@@ -30,7 +30,7 @@ def meshi(status)
 
 
   
-  matchd = status.match(/@#{@name} ([０-９0-9]+|今|明|明々*後)日[ の]?(.)/)
+  matchd = status.match(/@#{@name} ([0-9]+|今|明|明々*後)日[ の]?(.)/)
   return unless matchd
   
   specified_day  = matchd[1]
@@ -43,7 +43,7 @@ def meshi(status)
     raise "今日は月末です。献立表の更新までお待ちください。"
   end
 
-  if specified_day =~ /[０-９0-9]+/
+  if specified_day =~ /[0-9]+/
     if day > end_day
       return
     end
