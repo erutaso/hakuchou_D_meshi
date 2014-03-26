@@ -26,14 +26,14 @@ end
 @name        = Const::SCREEN_NAME
 
 
-def meshi(status)
+def get_menu(status)
   
-  matchd = status.text.match(/@#{@name} ([0-9]+|今|明|明々*後)日[ の]?(.)/)
-  puts "#{matchd}"
-  return unless matchd
+  matches = status.text.match(/([0-9]+|今|明|明々*後)日[ の]?(.)/)
+  puts "#{matches}"
+  return unless matches
   
-  specifid_day  = matchd[1]
-  specifid_time = matchd[2]
+  specifid_day  = matches[1]
+  specifid_time = matches[2]
 
   date    = Date.today
   end_day = Date.new(date.year, date.month, -1).day
@@ -56,7 +56,7 @@ def meshi(status)
   
   menu = "./#{@dic[specifid_time]}.txt"
   
-  return File.readlines(menu)[day - 1]
+  return read_menufile(menu, day)
 
 end
 
@@ -112,11 +112,7 @@ def auto
 
   if time
     menu = "./#{@dic[time]}.txt"
-    
-    open(menu){ |file|
-      today_menu = file.readlines[today.day - 1]
-    }
-    
+    today_menu = read_nemufile(menu, today.day)
     body = "#{d.month}月#{d.day}日の#{time}の献立は#{today_menu}です。"
     tweet(body)
   end
@@ -125,7 +121,13 @@ def auto
   
 end
 
+def read_menufile(filename, day)
+  open(filename){|file|
+    return file.readlines[day - 1]
+  }
+end
 
+#auto tweet timer
 Thread.new(){
   while true
     puts "ok #{DateTime.now}"
@@ -134,17 +136,22 @@ Thread.new(){
   end
 }
 
+def is_reply(text)
+  return text.include?(@name)
+end
 
 @stream_client.user do |object|
   next unless object.is_a? Twitter::Tweet
   unless object.text.start_with? "RT"
-    begin
-      tweet_body = meshi(object)
-    rescue => e
-      puts e
-      tweet_body = e
-    ensure
-      tweet(tweet_body, object)
+    if is_reply(object.text)
+      begin
+        tweet_body = get_menu(object)
+      rescue => e
+        puts e
+        tweet_body = e
+      ensure
+        tweet(tweet_body, object)
+      end
     end
   end
 end
