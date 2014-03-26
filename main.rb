@@ -27,14 +27,13 @@ end
 
 
 def meshi(status)
-
-
   
-  matchd = status.match(/@#{@name} ([0-9]+|今|明|明々*後)日[ の]?(.)/)
+  matchd = status.text.match(/@#{@name} ([0-9]+|今|明|明々*後)日[ の]?(.)/)
+  puts "#{matchd}"
   return unless matchd
   
-  specified_day  = matchd[1]
-  specified_time = matchd[2]
+  specifid_day  = matchd[1]
+  specifid_time = matchd[2]
 
   date    = Date.today
   end_day = Date.new(date.year, date.month, -1).day
@@ -43,7 +42,7 @@ def meshi(status)
     raise "今日は月末です。献立表の更新までお待ちください。"
   end
 
-  if specified_day =~ /[0-9]+/
+  if specifid_day =~ /[0-9]+/
     if day > end_day
       return
     end
@@ -51,19 +50,19 @@ def meshi(status)
   else
     d   = date.day
     day = d + 0
-    day = d + 1 if speciefid_day == "明"
-    day = d + 2 +  speciefid_day.count("々") if speciefid_day =~ /明々*後/
+    day = d + 1 if specifid_day == "明"
+    day = d + 2 +  specifid_day.count("々") if specifid_day =~ /明々*後/
   end
   
-  menu = "./#{@dic[specified_time]}.txt"
+  menu = "./#{@dic[specifid_time]}.txt"
   
-  return File.readlines(menu)[day - 1].chomp
+  return File.readlines(menu)[day - 1]
 
 end
 
 
-def tweet(body ,object = nil)
-  
+def tweet(body, object = nil)
+
   unless object
     opt = nil
     tweet = body
@@ -105,20 +104,24 @@ def auto
   today = Date.today
   
   return if @last_update and @last_update.hour == d.hour
-  
+
   time = "朝" if d.hour == 07
   time = "昼" if d.hour == 11
   time = "夜" if d.hour == 17
   follow      if d.hour == 00
-  
-  menu = "./#{@dic[time]}.txt"
 
-  today_menu = File.readlines(menu)[today.day - 1].chomp
+  if time
+    menu = "./#{@dic[time]}.txt"
+    
+    open(menu){ |file|
+      today_menu = file.readlines[today.day - 1]
+    }
+    
+    body = "#{d.month}月#{d.day}日の#{time}の献立は#{today_menu}です。"
+    tweet(body)
+  end
   
-  body = "#{d.month}月#{d.day}日の#{time}の献立は#{today_menu}です。"
-  tweet(body) if time
-  
-  @last_update = d    
+  @last_update = d
   
 end
 
@@ -127,7 +130,7 @@ Thread.new(){
   while true
     puts "ok #{DateTime.now}"
     auto
-    sleep(10)
+    sleep(1)
   end
 }
 
