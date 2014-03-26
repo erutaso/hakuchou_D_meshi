@@ -26,22 +26,20 @@ end
 @name        = Const::SCREEN_NAME
 
 
-def meshi(status)
+def get_menu(status)
   
-  matchd = status.text.match(/@#{@name} ([0-9]+|今|明|明々*後)日[ の]?(.)/)
-  puts "#{matchd}"
-  return unless matchd
+  matches = status.text.match(/([０-９0-9]+|今|明|明々*後)日[ の]?(.)/)
+  return unless matches
   
-  specifid_day  = matchd[1]
-  specifid_time = matchd[2]
-
+  specifid_day, specifid_time = matches[1], matches[2]
+  
   date    = Date.today
   end_day = Date.new(date.year, date.month, -1).day
-
+  
   if date.day == end_day
     raise "今日は月末です。献立表の更新までお待ちください。"
   end
-
+  
   if specifid_day =~ /[0-9]+/
     if day > end_day
       return
@@ -56,23 +54,30 @@ def meshi(status)
   
   menu = "./#{@dic[specifid_time]}.txt"
   
-  return File.readlines(menu)[day - 1]
+  return read_menufile(menu, day)
 
 end
 
 
 def tweet(body, object = nil)
-
+  
   unless object
-    opt = nil
+    opt = {}
     tweet = body
   else
-    opt = {"in_reply_to_status_id" => object.id.to_s}
-    tweet = "@#{object.user.screen_name} #{body}"
+    if object.text =~ /(@|＠)#{@name}(?!\w)/
+      opt = {"in_reply_to_status_id" => object.id.to_s}
+      tweet = "@#{object.user.screen_name} #{body}"
+    end
   end
   
-  @rest_client.update tweet,opt
+  @rest_client.update tweet, opt
   
+end
+
+
+def is_reply(text)
+  return text.include?(@name)
 end
 
 
@@ -101,7 +106,7 @@ end
 def auto
   
   d     = DateTime.now
-  today = Date.today
+  today = Date.today.day
   
   return if @last_update and @last_update.hour == d.hour
 
@@ -111,18 +116,24 @@ def auto
   follow      if d.hour == 00
 
   if time
-    menu = "./#{@dic[time]}.txt"
     
-    open(menu){ |file|
-      today_menu = file.readlines[today.day - 1]
-    }
+    menu       = "./#{@dic[time]}.txt"
+    today_menu = read_menufile(menu, today)
+    body       = "#{d.month}月#{d.day}日の#{time}の献立は#{today_menu}です。"
     
-    body = "#{d.month}月#{d.day}日の#{time}の献立は#{today_menu}です。"
     tweet(body)
+    
   end
   
   @last_update = d
   
+end
+
+
+def read_menufile(filename, day)
+  open(filename){ |file|
+    return file.readlines[day - 1]
+  }
 end
 
 
@@ -138,13 +149,15 @@ Thread.new(){
 @stream_client.user do |object|
   next unless object.is_a? Twitter::Tweet
   unless object.text.start_with? "RT"
-    begin
-      tweet_body = meshi(object)
-    rescue => e
-      puts e
-      tweet_body = e
-    ensure
-      tweet(tweet_body, object)
+    if is_reply(object.text)
+      begin
+        tweet_body = get_menu(object)
+      rescue => e
+        puts e
+        tweet_body = e
+      ensure
+        tweet(tweet_body, object)
+      end
     end
   end
 end
