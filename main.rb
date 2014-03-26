@@ -30,7 +30,7 @@ def get_menu(status)
   
   matches = status.text.match(/([0-9]+|今|明|明々*後)日[ の]?(.)/)
   puts "#{matches}"
-  return unless matchs
+  return unless matches
   
   specifid_day  = matches[1]
   specifid_time = matches[2]
