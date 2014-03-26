@@ -28,7 +28,7 @@ end
 
 def get_menu(status)
   
-  matches = status.text.match(/([０-９0-9]+|今|明|明々*後)日[ の]?(.)/)
+  matches = status.text.match(/([0-9]+|今|明|明々*後)日[ の]?(.)/)
   return unless matches
   
   specifid_day, specifid_time = matches[1], matches[2]
@@ -141,7 +141,7 @@ Thread.new(){
   while true
     puts "ok #{DateTime.now}"
     auto
-    sleep(1)
+    sleep(10)
   end
 }
 
