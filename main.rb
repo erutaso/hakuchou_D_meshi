@@ -2,8 +2,7 @@
 
 require 'twitter'
 require 'date'
-require 'nkf'
-require './key.rb'
+require './key2.rb'
 
 @rest_client = Twitter::REST::Client.new do |config|
   config.consumer_key        = Const::CONSUMER_KEY
@@ -33,19 +32,18 @@ def get_menu(status)
   date    = Date.today
   end_day = Date.new(date.year, date.month, -1).day
   
-  raise "今日は月末です。献立表の更新までお待ちください。" if date.day == end_day
-  
   specified_day = specified_day.tr("０-９", "0-9")
-
+  
   if specified_day =~ /[0-9]+/
     day = specified_day.to_i
-    return if day > end_day
   else
     d   = date.day
     day = d + 0
     day = d + 1 if specified_day == "明"
     day = d + 2 +  specified_day.count("々") if specified_day =~ /明々*後/
   end
+
+  raise "今日は月末です。献立表の更新までお待ちください。" if day > end_day
   
   menu = "./#{@dic[specified_time]}.txt"
   
