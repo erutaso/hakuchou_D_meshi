@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 require 'twitter'
+require 'tweetstream'
 require 'date'
 require './key.rb'
 
@@ -11,12 +12,15 @@ require './key.rb'
   config.access_token_secret = Const::ACCESS_TOKEN_SECRET
 end
 
-@stream_client = Twitter::Streaming::Client.new do |config|
+TweetStream.configure do |config|
   config.consumer_key        = Const::CONSUMER_KEY
   config.consumer_secret     = Const::CONSUMER_SECRET
-  config.access_token        = Const::ACCESS_TOKEN
-  config.access_token_secret = Const::ACCESS_TOKEN_SECRET
+  config.oauth_token        = Const::ACCESS_TOKEN
+  config.oauth_token_secret = Const::ACCESS_TOKEN_SECRET
+  congig.auth_method        = :outh
 end
+
+client = TweetStream::Client.new
 
 @dic         = {'朝' => 'first', '昼' => 'second', '夜' => 'third'}
 @last_update = nil
@@ -129,17 +133,17 @@ Thread.new(){
   end
 }
 
-@stream_client.user do |object|
-  next unless object.is_a? Twitter::Tweet
-  unless object.text.start_with? "RT"
+client.userstream do |status|
+  next unless status.is_a? Twitter::Tweet
+  unless status.text.start_with? "RT"
     if is_reply(object.text)
       begin
-        tweet_body = get_menu(object)
+        tweet_body = get_menu(status)
       rescue => e
         puts e
         tweet_body = e
       ensure
-        tweet(tweet_body, object)
+        tweet(tweet_body, status)
       end
     end
   end
